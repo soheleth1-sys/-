@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHADOW HOST — Deploy</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#fff;font-family:Arial,sans-serif}
+header{padding:20px;background:#111a30;border-bottom:1px solid #293650}
+.logo{font-size:23px;font-weight:bold;color:#55e6c1}.logo span{color:#fff}
+main{max-width:680px;margin:auto;padding:20px 15px}
+.hero{text-align:center;padding:25px 0}
+h1{font-size:32px;margin:0 0 12px}h1 span{color:#55e6c1}
+p{color:#a9b6ce;line-height:1.6}
+.card{background:#111a30;border:1px solid #293650;border-radius:15px;padding:22px;margin-bottom:20px}
+label{display:block;margin:15px 0 8px;color:#cbd5e1}
+input{width:100%;padding:13px;border-radius:8px;border:1px solid #344563;background:#0b1020;color:white}
+button{width:100%;padding:14px;border:0;border-radius:9px;background:#55e6c1;color:#07141a;font-weight:bold;font-size:16px;margin-top:18px;cursor:pointer}
+button:disabled{opacity:.55}
+#status{overflow-wrap:anywhere;font-size:14px}
+#live{display:none;margin-top:15px;padding:15px;background:#0b1020;border-radius:9px}
+a{color:#55e6c1;overflow-wrap:anywhere}
+.small{font-size:12px;color:#8795ad}
+</style>
+</head>
+<body>
+<header><div class="logo">SHADOW <span>HOST</span></div></header>
+<main>
+  <div class="hero">
+    <h1>Deploy your <span>website.</span></h1>
+    <p>HTML ফাইল আপলোড করে ওয়েবসাইট প্রকাশ করো।</p>
+  </div>
+  <section class="card">
+    <h2>🚀 New Deployment</h2>
+    <form id="deployForm">
+      <label for="siteName">Website Name</label>
+      <input id="siteName" name="siteName" placeholder="my-website"
+        maxlength="40" pattern="[a-zA-Z0-9_-]+" required>
+      <label for="htmlFile">HTML File সিলেক্ট করো</label>
+      <input id="htmlFile" name="htmlFile" type="file"
+        accept=".html,.htm,text/html" required>
+      <button id="deployBtn" type="submit">⬆ Deploy Website</button>
+    </form>
+    <p id="status" role="status">Ready to deploy.</p>
+    <div id="live">
+      <h3>✅ Deployment Complete</h3>
+      <p>Live Website URL:</p>
+      <a id="liveLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+      <button type="button" id="copyBtn">Copy Live URL</button>
+    </div>
+  </section>
+  <p class="small">SHADOW HOST · Starter PHP hosting prototype</p>
+</main>
+<script>
+const form = document.getElementById("deployForm");
+const statusBox = document.getElementById("status");
+const deployBtn = document.getElementById("deployBtn");
+const liveBox = document.getElementById("live");
+const liveLink = document.getElementById("liveLink");
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = document.getElementById("htmlFile").files[0];
+  const name = document.getElementById("siteName").value.trim();
+
+  if (!/^[a-zA-Z0-9_-]{1,40}$/.test(name)) {
+    statusBox.textContent = "Website name-এ English letters, numbers, _ বা - ব্যবহার করো।";
+    return;
+  }
+  if (!file || !/\.(html|htm)$/i.test(file.name)) {
+    statusBox.textContent = "একটি .html বা .htm ফাইল সিলেক্ট করো।";
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    statusBox.textContent = "ফাইলের সাইজ সর্বোচ্চ 2 MB হতে পারবে।";
+    return;
+  }
+
+  const data = new FormData();
+  data.append("siteName", name);
+  data.append("htmlFile", file);
+  deployBtn.disabled = true;
+  liveBox.style.display = "none";
+  statusBox.textContent = "Uploading...";
+
+  try {
+    const response = await fetch("deploy.php", {method:"POST", body:data});
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || "Deployment failed");
+    liveLink.href = result.url;
+    liveLink.textContent = result.url;
+    liveBox.style.display = "block";
+    statusBox.textContent = "Website deployed successfully!";
+  } catch (err) {
+    statusBox.textContent = "Error: " + err.message +
+      " — PHP-enabled hosting-এ index.html ও deploy.php আপলোড করো।";
+  } finally {
+    deployBtn.disabled = false;
+  }
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(liveLink.href);
+    statusBox.textContent = "Live URL copied!";
+  } catch {
+    statusBox.textContent = "লিংকটি সিলেক্ট করে কপি করো: " + liveLink.href;
+  }
+});
+</script>
+</body>
+</html>
